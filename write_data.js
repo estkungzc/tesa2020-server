@@ -30,12 +30,25 @@ mongo_client.connect(
 );
 
 function write_sensor_data(data) {
-  db.collection('example_raw_data').insertOne(data, function(error, res) {
+  db.collection('raw_data').insertOne(data, function(error, res) {
     if (error) {
       console.error(error);
     } else {
       console.log(
         'Insert data from ' +
+          data.sensor_type +
+          '/' +
+          data.sensor_id +
+          ' sensor.'
+      );
+    }
+  });
+  db.collection('fake_raw_data').insertOne(data, function(error, res) {
+    if (error) {
+      console.error(error);
+    } else {
+      console.log(
+        'Insert fake data from ' +
           data.sensor_type +
           '/' +
           data.sensor_id +
@@ -68,15 +81,16 @@ mqtt_client.on('reconnect', function() {
 });
 
 mqtt_client.on('message', function(topic, message) {
-  if (topic.toString().match(/tgr2020\/.+/g)) {
+    
+    
+  if (topic.toString().match(/tgr2020\/.+\/data\/.+/g)) {
     var sensor_type = topic.toString().split('/')[1];
     var sensor_id = topic.toString().split('/')[3];
     var tmp = {};
-
-    tmp['ts'] = new Date();
+    const now = new Date();
+    tmp['ts'] = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
     tmp['sensor_type'] = sensor_type;
     tmp['sensor_id'] = sensor_id;
-
     try {
       tmp['data'] = JSON.parse(message);
       write_sensor_data(tmp);
